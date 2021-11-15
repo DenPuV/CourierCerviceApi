@@ -76,8 +76,9 @@ function loginator(pgPool){
                             response.cookie('login', user.login);
                             response.cookie('token', userkey);
                             users[user.login].token = userkey;
-                            users[user.login].roles = await getRoles(user.login);
-                            response.sendStatus('200');
+                            let roles = await getRoles(user.login);
+                            users[user.login].roles = roles;
+                            response.status('200').json({roles: roles});
                         }
                     });
                 }
