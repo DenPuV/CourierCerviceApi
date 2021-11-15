@@ -28,18 +28,22 @@ function loginator(pgPool){
             else {
                 result.rows.forEach(async item => {
                     users[item.login] = {};
-                    let roles = await pool.query(
-                        `SELECT ur.code FROM "userRole" ur JOIN "userRoleMap" urm ON (ur.id = urm."roleId")`
-                        + `JOIN "user" u ON (u.id = urm."userId")`
-                        + `WHERE u.id = '${item.id}'`
-                    );
                     users[item.login].token = item.token;
-                    users[item.login].roles = roles.rows;
+                    users[item.login].roles = await getRoles(item.login);
                 });
                 console.log(`Users tokens syncing finished\nSynced ${Object.keys(users).length} users tokens`);
             }
         });
     };
+
+    const getRoles = async (login) => {
+        let roles = await pool.query(
+            `SELECT ur.code FROM "userRole" ur JOIN "userRoleMap" urm ON (ur.id = urm."roleId")`
+            + `JOIN "user" u ON (u.id = urm."userId")`
+            + `WHERE u.id = (SELECT "id" FROM "user" WHERE "login" = '${login}' LIMIT 1)`
+        );
+        return roles.rows;
+    }
 
     this.checkUser = (request, response, next) => {
         const user = {
@@ -66,12 +70,13 @@ function loginator(pgPool){
                 if (result.rows.length < 1 || passwordHash.verify(user.password, result.rows[0].passwordhash)) response.sendStatus("401")
                 else {
                     let userkey = uuidv4();
-                    pool.query(`INSERT INTO "userTokenMap" ("userId", token) VALUES ('${result.rows[0].id}', '${userkey}')`, (err, res) => {
+                    pool.query(`INSERT INTO "userTokenMap" ("userId", token) VALUES ('${result.rows[0].id}', '${userkey}')`, async (err, res) => {
                         if (err) response.sendStatus("400");
                         else {
                             response.cookie('login', user.login);
                             response.cookie('token', userkey);
-                            users[user.login] = userkey;
+                            users[user.login].token = userkey;
+                            users[user.login].roles = await getRoles(user.login);
                             response.sendStatus('200');
                         }
                     });

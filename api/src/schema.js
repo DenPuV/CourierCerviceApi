@@ -8,7 +8,8 @@ let {
     GraphQLList,
     GraphQLObjectType,
     GraphQLNonNull,
-    GraphQLSchema
+    GraphQLSchema,
+    GraphQLInputObjectType
 } = require('graphql');
 
 const RoleType = new GraphQLObjectType({
@@ -51,13 +52,22 @@ const PackageType = new GraphQLObjectType({
     })
 });
 
+const inputPackageType = new GraphQLInputObjectType({
+    name: "ipnutPackage",
+    fields: () => ({
+        weight: {type: new GraphQLNonNull(GraphQLFloat)},
+        description: {type: GraphQLString},
+        orderId: {type: new GraphQLNonNull(GraphQLID)}
+    })
+});
+
 const RouteType = new GraphQLObjectType({
     name: "Route",
     description: "This represents an Route",
     fields: () => ({
         id: {type: new GraphQLNonNull(GraphQLID)},
-        from: {type: new GraphQLNonNull(GraphQLString)},
-        to: {type: new GraphQLNonNull(GraphQLString)},
+        from: {type: GraphQLString},
+        to: {type: GraphQLString},
         orderId: {type: new GraphQLNonNull(GraphQLID)},
         order: {
             type: new GraphQLNonNull(OrderType),
@@ -68,6 +78,15 @@ const RouteType = new GraphQLObjectType({
                 return order[0];
             }
         }
+    })
+});
+
+const inputRouteType = new GraphQLInputObjectType({
+    name: "inputRoute",
+    description: "Input route type",
+    fields: () => ({
+        from: {type: new GraphQLNonNull(GraphQLString)},
+        to: {type: new GraphQLNonNull(GraphQLString)}
     })
 });
 
@@ -108,11 +127,11 @@ const OrderType = new GraphQLObjectType({
             }
         },
         route: {
-            type: new GraphQLList(RouteType),
+            type: RouteType,
             resolve: async (order) => {
-                return await qs.query(
+                return (await qs.query(
                     `SELECT * FROM "route" WHERE "orderId" = '${order.id}'`
-                );
+                ))[0];
             }
         }
     })
@@ -134,14 +153,7 @@ const queryRootType = new GraphQLObjectType({
     name: "CourierServiceSchema",
     description: "Blog Application Schema Query Root",
     fields: () => ({
-        contacts: {
-            type: new GraphQLList(ContactType),
-            description: "List of all Contacts",
-            resolve: async function() {
-                return await qs.getContacts();
-            }
-        },
-        orders: {
+        ordersByContactId: {
             type: new GraphQLList(OrderType),
             description: "List of all users orders",
             args: {
@@ -150,10 +162,19 @@ const queryRootType = new GraphQLObjectType({
                 }
             },
             resolve: async (order, args) => {
-                let orders = await qs.query(
-                    `SELECT * FROM "order" WHERE "contactId" = '${args.contactId}'`
-                );
-                return orders;
+                return await qs.getOrdersByContactId(args.contactId);
+            }
+        },
+        ordersByLogin: {
+            type: new GraphQLList(OrderType),
+            description: "List of all users orders",
+            args: {
+                login: {
+                    type: new GraphQLNonNull(GraphQLString)
+                }
+            },
+            resolve: async (order, args) => {
+                return await qs.getOrdersByLogin(args.login);
             }
         }
     })
@@ -166,8 +187,42 @@ const mutationRootType = new GraphQLObjectType({
         addOrder: {
             type: GraphQLID,
             description: "Add an order",
-            resolve: async () => {
-                return await qs.newOrder(schema.context.cookies.login);
+            args: {
+                route: {
+                    type: new GraphQLNonNull(inputRouteType)
+                }
+            },
+            resolve: async (parent, args) => {
+                let orderId = await qs.newOrder(schema.context.cookies.login);
+                qs.addRoute(orderId, args.route);
+                return orderId;
+            }
+        },
+        addPackages: {
+            type: new GraphQLList(PackageType),
+            description: "Add packages to order",
+            args: {
+                packages: {
+                    type: new GraphQLList(inputPackageType)
+                }
+            },
+            resolve: async (parent, args) => {
+                return await qs.addPackages(args.packages);
+            }
+        },
+        setOrderStatus: {
+            type: GraphQLString,
+            description: "Set new order status",
+            args: {
+                orderId: {
+                    type: new GraphQLNonNull(GraphQLID)
+                },
+                status: {
+                    type: new GraphQLNonNull(GraphQLString)
+                }
+            },
+            resolve: async (parent, args) => {
+                return await qs.setOrderStatus(args.orderId, args.status);
             }
         }
     })
