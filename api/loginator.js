@@ -17,6 +17,10 @@ function loginator(pgPool){
     let users = {};
     let pool = pgPool;
 
+    this.getUsers = () => {
+        return users;
+    }
+
     /**
      * Синхронизирует пользователей из базы данных.
      */
@@ -50,7 +54,7 @@ function loginator(pgPool){
             login: request.cookies.login,
             token: request.cookies.token
         }
-        if(users[user.login] && user.token && users[user.login].token === user.token){
+        if(users[user.login]?.token === user?.token){
             next();
         }
         else{
@@ -63,18 +67,23 @@ function loginator(pgPool){
      */
     this.login = (request, response) => {
         const user = request.body;
-        let query = `SELECT id FROM "user" WHERE login = '${user.login}' AND deleted != true`;
+        let query = `SELECT "id" FROM "user" WHERE "login" = '${user.login}' AND "deleted" != true`;
         pool.query(query, (error, result) => {
             if (error) response.sendStatus("400")
             else {
                 if (result.rows.length < 1 || passwordHash.verify(user.password, result.rows[0].passwordhash)) response.sendStatus("401")
                 else {
                     let userkey = uuidv4();
-                    pool.query(`INSERT INTO "userTokenMap" ("userId", token) VALUES ('${result.rows[0].id}', '${userkey}')`, async (err, res) => {
+                    pool.query(
+                        `INSERT INTO "userTokenMap" ("userId", "token") VALUES ('${result.rows[0].id}', '${userkey}')`
+                        + ` ON CONFLICT ("userId") DO UPDATE`
+                        + ` SET "token" = '${userkey}'`,
+                        async (err, res) => {
                         if (err) response.sendStatus("400");
                         else {
                             response.cookie('login', user.login);
                             response.cookie('token', userkey);
+                            users[user.login] = {};
                             users[user.login].token = userkey;
                             let roles = await getRoles(user.login);
                             users[user.login].roles = roles;

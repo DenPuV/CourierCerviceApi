@@ -68,10 +68,27 @@ const addPackages = async (packages) => {
     return packages;
 }
 
+const getOrderUserLoginAsync = (orderId, callback) => {
+    let text = `SELECT "login" FROM "user" u`
+        + ` JOIN "contact" c ON (u."id" = c."userId")`
+        + ` JOIN "order" o ON (c."id" = o."contactId")`
+        + ` WHERE o."id" ='${orderId}'`;
+    pool.query(text, callback);
+}
+
 const setOrderStatus = async (orderId, statusCode) => {
     let text = `UPDATE "order" SET "statusId" = (SELECT "id" FROM "status" WHERE "code" = '${statusCode}') WHERE "id" = '${orderId}'`
-    let answer = await query(text);
+    await query(text);
+    getOrderUserLoginAsync(orderId, (error, result) => {
+        if (!error) {
+            events.onOrderStatusUpdated?.(result.rows?.[0]?.login, orderId);
+        }
+    });
     return statusCode;
+}
+
+const events = {
+    onOrderStatusUpdated: null
 }
 
 module.exports = {
@@ -82,5 +99,6 @@ module.exports = {
     newOrder: newOrder,
     addPackages: addPackages,
     setOrderStatus: setOrderStatus,
-    query: query
+    query: query,
+    events: events
 };

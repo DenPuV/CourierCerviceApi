@@ -8,6 +8,14 @@ const qs = require("./queries");
 const app = express();
 const port = 3000;
 
+const messanger = new (require('./messanger'))(qs.loginator.getUsers());
+qs.events.onOrderStatusUpdated = (login) => {
+    messanger.notifyUser(login, "Order status updated");
+};
+const webSocket = require("ws");
+const wsServer = new webSocket.Server({port: 9000});
+wsServer.on('connection', messanger.getConnectionManager());
+
 app.use(bodyParser.json());
 app.use(
     bodyParser.urlencoded({
