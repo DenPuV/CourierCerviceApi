@@ -1,7 +1,18 @@
+/**
+ * WebSocket messanger.
+ * @param {*} usersList Список пользователей для аутентификации. 
+ */
 function Messanger(usersList) {
     let clients = {}
     let users = usersList;
 
+    /**
+     * Аутентификация пользователя.
+     * @param {*} login Логин
+     * @param {*} token Токен
+     * @param {*} wsClient WebSocket клиент.
+     * @returns Логин, или null при провале аутентификации.
+     */
     const loginUser = (login, token, wsClient) => {
         if (users[login]?.token === token) {
             clients[login] = wsClient;
@@ -10,21 +21,40 @@ function Messanger(usersList) {
         return null;
     }
 
+    /**
+     * Отправка сообщения польозователю по WebSocket.
+     * @param {*} login 
+     * @param {*} data 
+     * @param {*} event 
+     */
     this.notifyUser = (login, data, event = 'notify') => {
         clients[login]?.send(JSON.stringify({ event: event, data: data, error: null }));
     }
 
+    /**
+     * конструктор менеджера WebSocket подключения.
+     * @param {*} commandsList Список комманд.
+     * @returns Менеджер WebSocket подключения.
+     */
     this.getConnectionManager = (commandsList = {}) => {
         let login = null;
         let interval = null;
 
+        /**
+         * Тест WebSocket.
+         * @param {*} callback 
+         */
         const startSpam = async (callback) => {
             interval = setInterval(callback, 1000);
         }
 
         return (wsClient) => {
             
-    
+            /**
+             * Проверяет аутентификацию пользователя, при успехе выполняет callback.
+             * @param {*} callback 
+             * @param  {...any} args Аргументы, которые передаются в callback.
+             */
             const checkUser = (callback, ...args) => {
                 login
                     ? callback?.(...args)
@@ -32,9 +62,20 @@ function Messanger(usersList) {
             }
 
             commands = {
+                /**
+                 * Тестовая команда эхо.
+                 */
                 'ECHO': (data, wsClient) => wsClient.send(JSON.stringify({ event: 'notify', data: data, error: null })),
+
+                /**
+                 * Тестовые команды отправки запросов клиенты. 
+                 */
                 'SPAM': (data, wsClient) => checkUser(startSpam, () => wsClient.send("IT'S A SPAM!")),
                 'NOTSPAM': (data, wsClient) => clearInterval(interval),
+
+                /**
+                 * Команда аутентификации пользователя. 
+                 */
                 'LOGIN': (data, wsClient) => {
                     login = loginUser(data.login, data.token, wsClient);
                             wsClient.send(
@@ -46,10 +87,17 @@ function Messanger(usersList) {
                 ...commandsList
             };
 
+            /**
+             * Событие закрытия соедининия.
+             */
             wsClient.on('close', () => {
                 clearInterval(interval);
                 delete clients[login];
             });
+
+            /**
+             * События получения сообщения от пользователя.
+             */
             wsClient.on('message', (messageText) => {
                 try {
                     let message = JSON.parse(messageText)

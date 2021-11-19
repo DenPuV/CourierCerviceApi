@@ -5,24 +5,37 @@ const { graphqlHTTP } = require('express-graphql');
 const schema = require('./src/schema.js');
 const qs = require("./queries");
 
+/**
+ * Настройка express приложения
+ */
 const app = express();
 const port = 3000;
 
+/**
+ * Настройки мессенджера.
+ */
 const messanger = new (require('./messanger'))(qs.loginator.getUsers());
-qs.events.onOrderStatusUpdated = (login) => {
-    messanger.notifyUser(login, "Order status updated");
-};
+qs.events.on('orderStatusUpdated', (login, orderId) => {
+    messanger.notifyUser(login, {message: "Order status updated", orderId: orderId});
+});
+
+/**
+ * Настройка WebSocket приложения.
+ */
 const webSocket = require("ws");
 const wsServer = new webSocket.Server({port: 9000});
 wsServer.on('connection', messanger.getConnectionManager());
 
+/**
+ * Настройка промежуточного промежуточного слоя express приложения. 
+ */
 app.use(bodyParser.json());
 app.use(
     bodyParser.urlencoded({
         extended: true
     })
 );
-app.use(cookieParser("MemeRadioSecret"));
+app.use(cookieParser("CourierServiceSecret"));
 app.use('/auth', qs.loginator.checkUser);
 app.use('/auth/admin', qs.loginator.checkRole("admin"));
 app.use('/auth/graphql', graphqlHTTP((req) => {
@@ -33,6 +46,9 @@ app.use('/auth/graphql', graphqlHTTP((req) => {
     }
 }));
 
+/**
+ * Настройка роутинга приложения.
+ */
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/www/index.html");
 });
@@ -49,20 +65,13 @@ app.get("/www/*", (req, res) => {
   });
 });
 
-// app.get(('/', (request, response) => {  }))
 app.post("/register", qs.loginator.register);
 app.post("/login", qs.loginator.login);
 app.get("/logout", qs.loginator.logout);
 
-// Authorized requests.
-//app.use(qs.checkUser);
-app.get("/auth/checkLogin", (req, res) => {
-    res.status("200").json({ status: `You are ${req.cookies.login}` });
-});
-app.get("/auth/admin/test", (req, res) => {
-    res.status("200").json({status: "OK"});
-});
-
+/**
+ * Запуск приложения.
+ */
 app.listen(port, () => {
     console.log(`App running on port ${port}.`);
 });

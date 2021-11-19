@@ -12,6 +12,9 @@ let {
     GraphQLInputObjectType
 } = require('graphql');
 
+/**
+ * GraphQL тип роли.
+ */
 const RoleType = new GraphQLObjectType({
     name: "Role",
     description: "This represent an role",
@@ -22,6 +25,9 @@ const RoleType = new GraphQLObjectType({
     })
 });
 
+/**
+ * GraphQL тип статуса.
+ */
 const StatusType = new GraphQLObjectType({
     name: "Status",
     description: "This represent an status",
@@ -32,6 +38,9 @@ const StatusType = new GraphQLObjectType({
     })
 });
 
+/**
+ * GraphQL тип посылки.
+ */
 const PackageType = new GraphQLObjectType({
     name: "Package",
     description: "This represents an Package",
@@ -52,6 +61,9 @@ const PackageType = new GraphQLObjectType({
     })
 });
 
+/**
+ * GraphQL тип для добавления посылки.
+ */
 const inputPackageType = new GraphQLInputObjectType({
     name: "ipnutPackage",
     fields: () => ({
@@ -61,6 +73,9 @@ const inputPackageType = new GraphQLInputObjectType({
     })
 });
 
+/**
+ * GraphQL тип маршрута.
+ */
 const RouteType = new GraphQLObjectType({
     name: "Route",
     description: "This represents an Route",
@@ -81,6 +96,9 @@ const RouteType = new GraphQLObjectType({
     })
 });
 
+/**
+ * GraphQL тип для добавления маршрута.
+ */
 const inputRouteType = new GraphQLInputObjectType({
     name: "inputRoute",
     description: "Input route type",
@@ -90,6 +108,9 @@ const inputRouteType = new GraphQLInputObjectType({
     })
 });
 
+/**
+ * GraphQL тип заказа.
+ */
 const OrderType = new GraphQLObjectType({
     name: "Order",
     description: "This represents an Order",
@@ -137,6 +158,9 @@ const OrderType = new GraphQLObjectType({
     })
 });
 
+/**
+ * GraphQL тип контакта.
+ */
 const ContactType = new GraphQLObjectType({
     name: "Contact",
     description: "This represent an contact",
@@ -149,6 +173,9 @@ const ContactType = new GraphQLObjectType({
     })
 });
 
+/**
+ * Схема GraphQL запросов.
+ */
 const queryRootType = new GraphQLObjectType({
     name: "CourierServiceSchema",
     description: "Blog Application Schema Query Root",
@@ -180,10 +207,16 @@ const queryRootType = new GraphQLObjectType({
     })
 });
 
+/**
+ * Схема GraphQL мутаций.
+ */
 const mutationRootType = new GraphQLObjectType({
     name: "Mutation",
     description: "Root mutation",
     fields: () => ({
+        /**
+         * Добавление нового заказа.
+         */
         addOrder: {
             type: GraphQLID,
             description: "Add an order",
@@ -198,6 +231,10 @@ const mutationRootType = new GraphQLObjectType({
                 return orderId;
             }
         },
+
+        /**
+         * Добавление посылок к заказу.
+         */
         addPackages: {
             type: new GraphQLList(PackageType),
             description: "Add packages to order",
@@ -210,6 +247,10 @@ const mutationRootType = new GraphQLObjectType({
                 return await qs.addPackages(args.packages);
             }
         },
+
+        /**
+         * Измениение статуса заказа.
+         */
         setOrderStatus: {
             type: GraphQLString,
             description: "Set new order status",
@@ -228,6 +269,9 @@ const mutationRootType = new GraphQLObjectType({
     })
 });
 
+/**
+ * GraphQL схема.
+ */
 const schema = new GraphQLSchema({
     query: queryRootType,
     mutation: mutationRootType

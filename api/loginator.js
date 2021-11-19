@@ -40,6 +40,11 @@ function loginator(pgPool){
         });
     };
 
+    /**
+     * Получает список ролей пользователя.
+     * @param {*} login Логин пользователя.
+     * @returns Массив объектов с ролями ролей.
+     */
     const getRoles = async (login) => {
         let roles = await pool.query(
             `SELECT ur.code FROM "userRole" ur JOIN "userRoleMap" urm ON (ur.id = urm."roleId")`
@@ -49,6 +54,9 @@ function loginator(pgPool){
         return roles.rows;
     }
 
+    /**
+     * Проверяет авторизацию пользователя.
+     */
     this.checkUser = (request, response, next) => {
         const user = {
             login: request.cookies.login,
@@ -126,6 +134,11 @@ function loginator(pgPool){
         });
     };
 
+    /**
+     * Проверяет пользователя на принадлежность роли.
+     * @param {*} roleCode Код роли.
+     * @returns 
+     */
     this.checkRole = (roleCode) => {
         return (request, response, next) => {
             const login = request.cookies.login;

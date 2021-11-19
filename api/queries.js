@@ -1,4 +1,6 @@
 require('dotenv').config();
+const events = require('./eventKeeper')
+
 const {
     v1: uuidv1,
     v4: uuidv4,
@@ -16,6 +18,11 @@ const pool = new Pool({
 const loginator = new (require("./loginator")).loginator(pool);
 loginator.syncUsers();
 
+/**
+ * Запрос к бд.
+ * @param {*} text 
+ * @returns 
+ */
 const query = async (text) => {
     try {
         const { rows } = await pool.query(text);
@@ -26,16 +33,31 @@ const query = async (text) => {
     }
 }
 
-const getOrdersByContactId = async (contactId) => {
+/**
+ * Запрос заказов контакта по id.
+ * @param {*} contactId 
+ * @returns 
+ */
+const getOrdersByContactId = (contactId) => {
     return query(`SELECT * FROM "order" WHERE "contactId" = '${contactId}'`);
 }
 
-const getOrdersByLogin = async (login) => {
+/**
+ * Запрос заказов пользователя по логину.
+ * @param {*} login 
+ * @returns 
+ */
+const getOrdersByLogin = (login) => {
     return query(`SELECT * FROM "order" WHERE "contactId" = `
     + `(SELECT c."id" FROM "contact" c JOIN "user" u ON (c."userId" = u."id") WHERE u."login" = '${login}')`);
 }
 
-const newOrder = async (login) => {
+/**
+ * Запорс добавления заказа пользователя.
+ * @param {*} login Логин пользователя.
+ * @returns 
+ */
+const newOrder = (login) => {
     let id = uuidv4();
     try {
         await query(
@@ -49,12 +71,22 @@ const newOrder = async (login) => {
     }
 }
 
-const addRoute = async (orderId, route) => {
+/**
+ * Запрос добавления маршрута заказа.
+ * @param {*} orderId Id заказа.
+ * @param {*} route Объект м данными маршрута.
+ */
+const addRoute = (orderId, route) => {
     pool.query(`INSERT INTO "route" ("id", "from", "to", "orderId")`
         + ` VALUES ('${uuidv4()}', '${route.from}', '${route.to}', '${orderId}')`);
 }
 
-const addPackages = async (packages) => {
+/**
+ * Запрос добавления посылок к заказу.
+ * @param {*} packages Массив объектов посылок.
+ * @returns Массив объектов посылок.
+ */
+const addPackages = (packages) => {
     let first = true;
     let text = `INSERT INTO "package" ("id", "weight", "description", "orderId") VALUES `
     packages.forEach(package => {
@@ -68,6 +100,11 @@ const addPackages = async (packages) => {
     return packages;
 }
 
+/**
+ * Запрос логина пользователя заказа.ПЕРЕПИСТЬ
+ * @param {*} orderId Id заказа.
+ * @param {*} callback 
+ */
 const getOrderUserLoginAsync = (orderId, callback) => {
     let text = `SELECT "login" FROM "user" u`
         + ` JOIN "contact" c ON (u."id" = c."userId")`
@@ -76,19 +113,21 @@ const getOrderUserLoginAsync = (orderId, callback) => {
     pool.query(text, callback);
 }
 
+/**
+ * Запрос изменения статуса заказа.
+ * @param {*} orderId Id заказа.
+ * @param {*} statusCode Код нового статуса.
+ * @returns Код нового статуса.
+ */
 const setOrderStatus = async (orderId, statusCode) => {
     let text = `UPDATE "order" SET "statusId" = (SELECT "id" FROM "status" WHERE "code" = '${statusCode}') WHERE "id" = '${orderId}'`
     await query(text);
     getOrderUserLoginAsync(orderId, (error, result) => {
         if (!error) {
-            events.onOrderStatusUpdated?.(result.rows?.[0]?.login, orderId);
+            events.rise('orderStatusUpdated', result.rows?.[0]?.login, orderId);
         }
     });
     return statusCode;
-}
-
-const events = {
-    onOrderStatusUpdated: null
 }
 
 module.exports = {
