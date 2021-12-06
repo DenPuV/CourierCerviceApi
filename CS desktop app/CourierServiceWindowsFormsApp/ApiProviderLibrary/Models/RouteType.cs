@@ -1,17 +1,18 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ApiProviderLibrary.model
+namespace ApiProviderLibrary
 {
-    public class Route
+    public class RouteType
     {
-        public Guid Id { get; set; }
+        [JsonProperty("from")]
         public string From { get; set; }
+
+        [JsonProperty("to")]
         public string To { get; set; }
-        public Guid OrderId { get; set; }
-        public Order Order { get; set; }
     }
 }

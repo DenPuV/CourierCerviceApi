@@ -203,6 +203,17 @@ const queryRootType = new GraphQLObjectType({
             resolve: async (order, args) => {
                 return await qs.getOrdersByLogin(args.login);
             }
+        },
+        order: {
+            type: OrderType,
+            description: "Order by id",
+            args: {
+                id: {type: GraphQLID}
+            },
+            resolve: async (order, args) => {
+
+                return (await qs.getOrderById(args.id))[0];
+            }
         }
     })
 });

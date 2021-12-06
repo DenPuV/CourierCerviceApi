@@ -13,56 +13,60 @@ namespace ApiProviderLibrary
 {
     public class ApiProvider
     {
+        private string _url;
+
+        public ApiProvider(string url = "http://localhost:3000")
+        {
+            _url = url;
+        }
 
         private CookieContainer _cookies = new CookieContainer();
+        
+        public WebSocketClient Client { get; private set; }
+        public string Login { get; private set; }
+        public string Token { get; private set; }
 
         /// <summary>
         /// Выполняет вход в систему.
         /// </summary>
         /// <param name="login">Имя пользователя.</param>
         /// <param name="password">Пароль.</param>
-        public dynamic Login(string login, string password)
+        public async Task<dynamic> LoginAsync(string login, string password)
         {
-            return GetWebResponse("http://localhost:3000/login",
+            var response = await GetWebResponseDynamicAsync("/login",
                 "{\"login\":\"" + login + "\",\"password\":\"" + password + "\"}",
                 "POST"
             );
-            //var request = (HttpWebRequest)WebRequest.Create("http://localhost:3000/login");
-            //request.Method = "POST";
-            //request.Accept = "application/json";
-            //request.ContentType = "application/json";
-            //request.CookieContainer = _cookies;
 
-            //var body = "{\"login\":\"" + login + "\",\"password\":\"" + password + "\"}";
+            GetAuthCookies();
 
-            //using (var streamWriter = new StreamWriter(request.GetRequestStream()))
-            //{
-            //    streamWriter.Write(body);
-            //}
-
-            //try
-            //{
-            //    var responseString = string.Empty;
-            //    var httpWebResponse = (HttpWebResponse)request.GetResponse();
-            //    using (var responseStream = httpWebResponse.GetResponseStream())
-            //    {
-            //        var reader = new StreamReader(responseStream, Encoding.UTF8);
-            //        responseString = reader.ReadToEnd();
-            //    }
-            //    return responseString;
-            //}
-            //catch (WebException ex)
-            //{
-            //    throw new InvalidOperationException("Не удалось выполнить запрос. " + ex.Message, ex);
-            //}
+            return response;
         }
 
-        public dynamic GetGraphqlData(string query) 
+        private void GetAuthCookies()
         {
-            var graphqlQuery = "{" + $@"""query"":""{query}""" + "}";
-            return GetWebResponse("http://localhost:3000/auth/graphql", query, "POST");
+            foreach (Cookie cookie in _cookies.GetCookies(new Uri(_url)))
+            {
+                if (cookie.Name == "login") Login = cookie.Value;
+                if (cookie.Name == "token") Token = cookie.Value;
+            }
         }
 
+        public Task<string> GetOrders()
+        {
+            return GetWebResponseAsync("/auth/admin/order");
+        }
+
+        public Task<string> GetGraphqlData(string query) 
+        {
+            var graphqlQuery = JsonConvert.SerializeObject(new GraphQLquery(query));
+            return GetWebResponseAsync("/auth/graphql", graphqlQuery, "POST");
+        }
+
+        public async Task<dynamic> GetWebResponseDynamicAsync(string uri, string body = null, string method = "GET")
+        {
+            return JObject.Parse(await GetWebResponseAsync(uri, body, method));
+        }
 
         /// <summary>
         /// Выполняет веб запрос.
@@ -71,9 +75,9 @@ namespace ApiProviderLibrary
         /// <param name="body">Тело запроса.</param>
         /// <param name="method">Метод запроса.</param>
         /// <returns>Newtonsoft json объект ответа на запрос.</returns>
-        public dynamic GetWebResponse(string uri, string body = null, string method = "GET")
+        public async Task<string> GetWebResponseAsync(string uri, string body = null, string method = "GET")
         {
-            var requestUri = uri;
+            var requestUri = _url + uri;
             var request = (HttpWebRequest)WebRequest.Create(requestUri);
             request.Method = method;
             request.Accept = "application/json";
@@ -84,7 +88,7 @@ namespace ApiProviderLibrary
             {
                 using (var streamWriter = new StreamWriter(request.GetRequestStream()))
                 {
-                    streamWriter.Write(body);
+                    await streamWriter.WriteAsync(body);
                 }
             }
 
@@ -95,15 +99,25 @@ namespace ApiProviderLibrary
                 using (var responseStream = httpWebResponse.GetResponseStream())
                 {
                     var reader = new StreamReader(responseStream, Encoding.UTF8);
-                    responseString = reader.ReadToEnd();
+                    responseString = await reader.ReadToEndAsync();
                 }
 
-                return JObject.Parse(responseString);
+                return responseString;
             }
             catch (WebException ex)
             {
                 throw new InvalidOperationException("Не удалось выполнить запрос. " + ex.Message, ex);
             }
+        }
+
+        public void ConnectWebSocket()
+        {
+            if (Client is null) Client = new WebSocketClient("ws://localhost:9000");
+        }
+
+        public void CloseWebSocket()
+        {
+            if (Client != null) Client.Dispose();
         }
     }
 }

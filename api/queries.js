@@ -17,6 +17,7 @@ const pool = new Pool({
 });
 const loginator = new (require("./loginator")).loginator(pool);
 loginator.syncUsers();
+const rest = new (require('./restRequests'))(pool);
 
 /**
  * Запрос к бд.
@@ -43,6 +44,15 @@ const getOrdersByContactId = (contactId) => {
 }
 
 /**
+ * Запрос заказа по id.
+ * @param {*} Id 
+ * @returns 
+ */
+const getOrderById = (id) => {
+    return query(`SELECT * FROM "order" WHERE "id" = '${id}'`);
+}
+
+/**
  * Запрос заказов пользователя по логину.
  * @param {*} login 
  * @returns 
@@ -60,7 +70,7 @@ const getOrdersByLogin = (login) => {
 const newOrder = (login) => {
     let id = uuidv4();
     try {
-        await query(
+        query(
             `INSERT INTO "order"("id", "contactId")`
             + `SELECT '${id}', c."id" FROM "contact" c JOIN "user" u ON (c."userId" = u."id") WHERE u."login" = '${login}'`
             )
@@ -96,7 +106,7 @@ const addPackages = (packages) => {
             : text += ",";
         text += `('${package.id}', '${package.weight}', '${package.description}', '${package.orderId}')`;
     });
-    let answer = await query(text);
+    let answer = query(text);
     return packages;
 }
 
@@ -134,10 +144,12 @@ module.exports = {
     loginator: loginator,
     getOrdersByContactId: getOrdersByContactId,
     getOrdersByLogin: getOrdersByLogin,
+    getOrderById: getOrderById,
     addRoute: addRoute,
     newOrder: newOrder,
     addPackages: addPackages,
     setOrderStatus: setOrderStatus,
     query: query,
-    events: events
+    events: events,
+    rest: rest
 };

@@ -35,7 +35,6 @@ namespace CourierServiceWindowsFormsApp
             this.LoginLabel = new System.Windows.Forms.Label();
             this.PasswordLabel = new System.Windows.Forms.Label();
             this.EnterButton = new System.Windows.Forms.Button();
-            this.AnswerLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // EnterLabel
@@ -92,28 +91,19 @@ namespace CourierServiceWindowsFormsApp
             this.EnterButton.UseVisualStyleBackColor = true;
             this.EnterButton.Click += new System.EventHandler(this.EnterButton_Click);
             // 
-            // AnswerLabel
-            // 
-            this.AnswerLabel.AutoSize = true;
-            this.AnswerLabel.Location = new System.Drawing.Point(113, 289);
-            this.AnswerLabel.Name = "AnswerLabel";
-            this.AnswerLabel.Size = new System.Drawing.Size(58, 13);
-            this.AnswerLabel.TabIndex = 6;
-            this.AnswerLabel.Text = "результат";
-            // 
-            // Form1
+            // LoginForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(334, 361);
-            this.Controls.Add(this.AnswerLabel);
             this.Controls.Add(this.EnterButton);
             this.Controls.Add(this.PasswordLabel);
             this.Controls.Add(this.LoginLabel);
             this.Controls.Add(this.PasswordTextBox);
             this.Controls.Add(this.LoginTextBox);
             this.Controls.Add(this.EnterLabel);
-            this.Name = "Form1";
+            this.Name = "LoginForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Вход";
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -128,7 +118,6 @@ namespace CourierServiceWindowsFormsApp
         private System.Windows.Forms.Label LoginLabel;
         private System.Windows.Forms.Label PasswordLabel;
         private System.Windows.Forms.Button EnterButton;
-        private System.Windows.Forms.Label AnswerLabel;
     }
 }
 

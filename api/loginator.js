@@ -1,4 +1,4 @@
-const { request, response } = require("express");
+﻿const { request, response } = require("express");
 const passwordHash = require("password-hash");
 const {
     v4: uuidv4,
@@ -75,11 +75,11 @@ function loginator(pgPool){
      */
     this.login = (request, response) => {
         const user = request.body;
-        let query = `SELECT "id" FROM "user" WHERE "login" = '${user.login}' AND "deleted" != true`;
+        let query = `SELECT "id", "password" FROM "user" WHERE "login" = '${user.login}' AND "deleted" != true`;
         pool.query(query, (error, result) => {
             if (error) response.sendStatus("400")
             else {
-                if (result.rows.length < 1 || passwordHash.verify(user.password, result.rows[0].passwordhash)) response.sendStatus("401")
+                if (!passwordHash.verify(user.password, result.rows[0]?.password)) response.sendStatus("401")
                 else {
                     let userkey = uuidv4();
                     pool.query(
@@ -146,7 +146,7 @@ function loginator(pgPool){
                 next();
             }
             else{
-                response.sendStatus("401");
+                response.sendStatus("403");
             }
         }
     }

@@ -38,6 +38,7 @@ app.use(
 app.use(cookieParser("CourierServiceSecret"));
 app.use('/auth', qs.loginator.checkUser);
 app.use('/auth/admin', qs.loginator.checkRole("admin"));
+app.use('/auth/user', qs.loginator.checkRole("user"));
 app.use('/auth/graphql', graphqlHTTP((req) => {
     schema.context = req;
     return {
@@ -64,6 +65,26 @@ app.get("/www/*", (req, res) => {
     }
   });
 });
+
+app.get("/auth/admin/order", qs.rest.getOrders);
+app.get("/auth/admin/order/:id", qs.rest.getOrders);
+app.put("/auth/admin/order/:contactId", qs.rest.putOrder);
+app.delete("/auth/admin/order/:id", qs.rest.cancelOrder);
+
+app.get("/auth/admin/package", qs.rest.getPackages);
+app.get("/auth/admin/package/:id", qs.rest.getPackages);
+app.delete("/auth/admin/package/:id", qs.rest.deletePackage);
+app.put("/auth/admin/package/:orderId", qs.rest.putPackage);
+
+app.get("/auth/admin/route", qs.rest.getRoutes);
+app.get("/auth/admin/route/:id", qs.rest.getRoutes);
+app.put("/auth/admin/route/:orderId", qs.rest.putRoute);
+
+app.get("/auth/admin/contact", qs.rest.getContacts);
+app.get("/auth/admin/contact/:id", qs.rest.getContacts);
+app.put("/auth/admin/contact", qs.rest.putContact);
+app.patch("/auth/admin/contact/:id", qs.rest.patchContact);
+app.delete("/auth/admin/contact/:id", qs.rest.deleteContact);
 
 app.post("/register", qs.loginator.register);
 app.post("/login", qs.loginator.login);

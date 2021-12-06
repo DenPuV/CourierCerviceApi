@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WebSocket messanger.
  * @param {*} usersList Список пользователей для аутентификации. 
  */
@@ -28,7 +28,7 @@ function Messanger(usersList) {
      * @param {*} event 
      */
     this.notifyUser = (login, data, event = 'notify') => {
-        clients[login]?.send(JSON.stringify({ event: event, data: data, error: null }));
+        clients[login]?.send(JSON.stringify({ command: event, data: data, error: null }));
     }
 
     /**
@@ -58,14 +58,14 @@ function Messanger(usersList) {
             const checkUser = (callback, ...args) => {
                 login
                     ? callback?.(...args)
-                    : wsClient.send(JSON.stringify({ data: null, error: 'You are not authorized. Send LOGIN command before.' }))
+                    : wsClient.send(JSON.stringify({ command:'', data: null, error: 'You are not authorized. Send LOGIN command before.' }))
             }
 
             commands = {
                 /**
                  * Тестовая команда эхо.
                  */
-                'ECHO': (data, wsClient) => wsClient.send(JSON.stringify({ event: 'notify', data: data, error: null })),
+                'ECHO': (data, wsClient) => wsClient.send(JSON.stringify({ command: 'notify', data: data, error: null })),
 
                 /**
                  * Тестовые команды отправки запросов клиенты. 
@@ -80,8 +80,8 @@ function Messanger(usersList) {
                     login = loginUser(data.login, data.token, wsClient);
                             wsClient.send(
                                 login
-                                    ? JSON.stringify({ event: 'notify', data: 'Hi ' + data.login, error: null })
-                                    : JSON.stringify({ event: 'notify', data: null, error: 'Not authorized' })
+                                    ? JSON.stringify({ command: 'notify', data: 'Hi ' + data.login, error: null })
+                                    : JSON.stringify({ command: 'notify', data: null, error: 'Not authorized' })
                             )
                 },
                 ...commandsList
@@ -103,10 +103,10 @@ function Messanger(usersList) {
                     let message = JSON.parse(messageText)
                     commands[message.command]
                         ? commands[message.command](message.data, wsClient)
-                        : wsClient.send(JSON.stringify({ event: 'notify', data: null, error: "Unknown command" }));
+                        : wsClient.send(JSON.stringify({ command: 'notify', data: null, error: "Unknown command: " + message.command }));
                 }
                 catch (e) {
-                    wsClient.send(JSON.stringify({ event: 'notify', data: null, error: 'Wrong message! ' + e }));
+                    wsClient.send(JSON.stringify({ command: 'notify', data: null, error: 'Wrong message! ' + e }));
                 }
             });
         }
